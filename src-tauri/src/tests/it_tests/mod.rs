@@ -1,0 +1,9 @@
+mod agenda_service_test;
+mod assessment_photo_files_test;
+mod backup_repository_test;
+mod contract_financial_service_test;
+mod physical_assessment_repository_test;
+mod physical_assessment_service_test;
+mod student_service_test;
+mod user_service_test;
+mod contract_expiration_test;

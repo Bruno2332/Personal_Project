@@ -1,0 +1,16 @@
+mod agenda_dto_test;
+mod agenda_service_test;
+mod backup_dto_test;
+mod backup_manager_test;
+mod backup_service_test;
+mod contract_dto_test;
+mod contract_service_test;
+mod domain;
+mod financial_records_dto_test;
+mod financial_records_service_test;
+mod physical_assessment_dto_test;
+mod physical_assessment_photos_service_test;
+mod physical_assessment_service_test;
+mod student_dto_test;
+mod student_service_test;
+mod user_service_test;

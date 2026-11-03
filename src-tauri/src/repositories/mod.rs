@@ -1,0 +1,9 @@
+pub mod agenda_repository;
+pub mod backup_repository;
+pub mod contract_repository;
+pub mod financial_records_repository;
+pub mod physical_assessment_photos_repository;
+pub mod physical_assessment_repository;
+pub mod student_repository;
+pub mod user_repository;
+pub mod vo2_assessment_repository;

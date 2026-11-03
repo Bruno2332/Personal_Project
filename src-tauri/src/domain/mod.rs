@@ -1,0 +1,10 @@
+pub mod abdominal_circ_classification;
+pub mod bmi;
+pub mod calculate_age;
+pub mod dynamometer_strength;
+pub mod fc_classification;
+pub mod hypertension_classification;
+pub mod skin_folds;
+pub mod strength_asymmetry;
+pub mod vo2_classification;
+pub mod waist_to_hip_ratio;
