@@ -49,6 +49,7 @@ fn current_record(
 #[tokio::test]
 async fn find_all_returns_page_and_forwards_all_filters() {
     let mut repository = MockFinancialRecordsPoolRepository::new();
+
     repository
         .expect_find_all_paginated()
         .withf(
@@ -59,12 +60,15 @@ async fn find_all_returns_page_and_forwards_all_filters() {
                     && *monthly == Some(true)
                     && *kind == Some(TransactionType::Income)
                     && status.as_deref() == Some("Paid")
-                    && period.as_deref() == Some("2026-11")
+                    && period.as_deref() == Some("3m")
                     && *contract_id == Some(20)
             },
         )
         .times(1)
-        .returning(|_, _, _, _, _, _, _, _| Ok(vec![financial_record_projection()]));
+        .returning(|_, _, _, _, _, _, _, _| {
+            Ok(vec![financial_record_projection()])
+        });
+
     repository
         .expect_count_all()
         .withf(|name, monthly, kind, status, period, contract_id| {
@@ -72,7 +76,7 @@ async fn find_all_returns_page_and_forwards_all_filters() {
                 && *monthly == Some(true)
                 && *kind == Some(TransactionType::Income)
                 && status.as_deref() == Some("Paid")
-                && period.as_deref() == Some("2026-11")
+                && period.as_deref() == Some("3m")
                 && *contract_id == Some(20)
         })
         .times(1)
@@ -86,11 +90,11 @@ async fn find_all_returns_page_and_forwards_all_filters() {
         Some(true),
         Some(TransactionType::Income),
         Some("Paid".to_string()),
-        Some("2026-11".to_string()),
+        Some("3m".to_string()),
         Some(20),
     )
-    .await
-    .unwrap();
+        .await
+        .unwrap();
 
     assert_eq!(result.page, 2);
     assert_eq!(result.size, 25);
@@ -98,7 +102,7 @@ async fn find_all_returns_page_and_forwards_all_filters() {
     assert_eq!(result.items.len(), 1);
     assert_eq!(
         result.items[0].student_name.as_deref(),
-        Some("Aluno de teste")
+        Some("Aluno de teste"),
     );
     assert_eq!(result.items[0].amount_cent, 5_000);
 }

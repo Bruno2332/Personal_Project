@@ -5,23 +5,23 @@ import AssessmentCharts from "../components/assessments/charts/AssessmentCharts"
 import type { AssessmentView } from "../utils/assessments"
 
 const printColors: Record<string, string> = {
-	// Peso: azul-petróleo.
+	
 	"#a3e635": "#0f4c5c",
 	"rgb(163, 230, 53)": "#0f4c5c",
 
-	// Gordura corporal: laranja escuro.
+	
 	"#22d3ee": "#b45309",
 	"rgb(34, 211, 238)": "#b45309",
 
-	// Massa magra: roxo.
+	
 	"#f59e0b": "#7c3aed",
 	"rgb(245, 158, 11)": "#7c3aed",
 
-	// Textos.
+	
 	"#717171": "#475569",
 	"rgb(113, 113, 113)": "#475569",
 
-	// Grade.
+	
 	"#252525": "#dbe2e8",
 	"rgb(37, 37, 37)": "#dbe2e8",
 }

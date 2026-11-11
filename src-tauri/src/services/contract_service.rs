@@ -65,18 +65,26 @@ pub async fn update<R>(
 ) -> Result<ContractDto, AppError>
 where
     R: ContractRepository
-        + FinancialRecordsConnectionRepository
-        + StudentStatusRepository,
+    + FinancialRecordsConnectionRepository
+    + StudentStatusRepository,
 {
     validate_dto(&dto.contract_dto)?;
-    validate_dto(&dto.financial_record)?;
+
+    if dto.contract_dto.billing_type == BillingType::Package {
+        validate_dto(&dto.financial_record)?;
+    }
 
     let mut result = apply_contract_duration(
         Contract::from(dto.contract_dto),
     )?;
+
     result.updated_at = Utc::now();
 
-    let updated = ContractRepository::update(&mut *repository, result, id)
+    let updated = ContractRepository::update(
+        &mut *repository,
+        result,
+        id,
+    )
         .await
         .map_err(|err| match err {
             sqlx::Error::RowNotFound => AppError::NotFound {
@@ -87,11 +95,25 @@ where
             },
         })?;
 
-    let records = build_financial_records(&updated, &dto.financial_record)?;
+    if updated.billing_type == BillingType::Package {
+        let records = build_financial_records(
+            &updated,
+            &dto.financial_record,
+        )?;
 
-    financial_records_service::sync_contract_records(&mut *repository, id, records).await?;
+        financial_records_service::sync_contract_records(
+            &mut *repository,
+            id,
+            records,
+        )
+            .await?;
+    }
 
-    sync_student_is_active(&mut *repository, updated.student_id).await?;
+    sync_student_is_active(
+        &mut *repository,
+        updated.student_id,
+    )
+        .await?;
 
     Ok(ContractDto::from(updated))
 }

@@ -69,9 +69,12 @@ pub fn run() {
             handlers::student_handler::insert_student,
             handlers::student_handler::update_student,
             handlers::agenda_handler::find_agenda_by_period,
+            handlers::agenda_handler::end_agenda_recurrence,
             handlers::agenda_handler::insert_agenda,
             handlers::agenda_handler::update_agenda,
             handlers::agenda_handler::delete_agenda,
+            handlers::agenda_exclusion_handler::find_agenda_exclusions_by_period,
+            handlers::agenda_exclusion_handler::exclude_agenda_occurrence,
             handlers::user_handler::find_user_by_id,
             handlers::user_handler::exists_user,
             handlers::user_handler::insert_user,
@@ -100,6 +103,7 @@ pub fn run() {
             handlers::physical_assessment_photos_handler::update_physical_assessment_photo,
             handlers::physical_assessment_photos_handler::delete_physical_assessment_photo,
             handlers::physical_assessment_photos_handler::read_physical_assessment_photo,
+
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

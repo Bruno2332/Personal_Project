@@ -5,7 +5,10 @@ import {
     type MouseEvent,
 } from "react"
 import type { AgendaDto } from "../../../model/agenda"
-import { deleteAgenda } from "../../../services/agendaService"
+import {
+    deleteAgenda,
+    endAgendaRecurrence,
+} from "../../../services/agendaService"
 import {
     type AgendaEvent,
     startOfWeek,
@@ -18,6 +21,9 @@ import {
 } from "../../../utils/agenda"
 import { errorMessage } from "../../../utils/errors"
 import useScheduleRecords from "./useScheduleRecords"
+import {
+    excludeAgendaOccurrence,
+} from "../../../services/agendaExclusionService"
 
 
 
@@ -175,9 +181,11 @@ export default function useSchedulePage() {
             return
         }
 
+        const recurring = appointment.is_recurring
+
         const confirmed = window.confirm(
-            appointment.is_recurring
-                ? "Excluir toda esta recorrência?"
+            recurring
+                ? "Encerrar esta recorrência a partir de hoje? Os agendamentos anteriores serão preservados."
                 : "Excluir este compromisso?",
         )
 
@@ -189,20 +197,108 @@ export default function useSchedulePage() {
         setNotice("")
 
         try {
-            await deleteAgenda(appointment.id)
+            if (recurring) {
+                const updated = await endAgendaRecurrence(appointment.id)
+
+                records.setAppointments((current) =>
+                    current.map((item) =>
+                        item.id === updated.id
+                            ? {
+                                ...updated,
+                                excluded_dates: item.excluded_dates,
+                            }
+                            : item,
+                    ),
+                )
+            } else {
+                await deleteAgenda(appointment.id)
+
+                records.setAppointments((current) =>
+                    current.filter((item) => item.id !== appointment.id),
+                )
+            }
 
             setSelectedEvent(null)
 
+            try {
+                await records.reload()
+
+                setNotice(
+                    recurring
+                        ? "Recorrência encerrada. O histórico foi preservado."
+                        : "Compromisso removido.",
+                )
+            } catch {
+                records.setError(
+                    recurring
+                        ? "Recorrência encerrada, mas não foi possível recarregar a agenda."
+                        : "Compromisso removido, mas não foi possível recarregar a agenda.",
+                )
+            }
+        } catch (error) {
+            records.setError(errorMessage(error))
+        } finally {
+            removing.current = false
+            setBusy(false)
+        }
+    }
+
+    async function removeSelectedOccurrence() {
+        if (!selectedEvent || removing.current) return
+
+        const appointment = selectedEvent.raw
+
+        if (!appointment.is_recurring) return
+
+        if (appointment.id === null) {
+            records.setError("O agendamento não possui um ID válido.")
+            return
+        }
+
+        const appointmentId = appointment.id
+        const occurrenceDate = formatISODate(selectedEvent.date)
+
+        const confirmed = window.confirm(
+            `Excluir somente a aula de ${selectedEvent.date.toLocaleDateString("pt-BR")}? As outras ocorrências serão mantidas.`,
+        )
+
+        if (!confirmed) return
+
+        removing.current = true
+        setBusy(true)
+        records.setError("")
+        setNotice("")
+
+        try {
+            await excludeAgendaOccurrence({
+                agenda_id: appointmentId,
+                occurrence_date: occurrenceDate,
+            })
+
             records.setAppointments((current) =>
-                current.filter((item) => item.id !== appointment.id),
+                current.map((item) =>
+                    item.id === appointmentId
+                        ? {
+                            ...item,
+                            excluded_dates: [
+                                ...new Set([
+                                    ...(item.excluded_dates ?? []),
+                                    occurrenceDate,
+                                ]),
+                            ],
+                        }
+                        : item,
+                ),
             )
+
+            setSelectedEvent(null)
 
             try {
                 await records.reload()
-                setNotice("Compromisso removido.")
+                setNotice("Aula excluída somente na data selecionada.")
             } catch {
                 records.setError(
-                    "Compromisso removido, mas não foi possível recarregar a agenda.",
+                    "Aula excluída, mas não foi possível recarregar a agenda.",
                 )
             }
         } catch (error) {
@@ -241,5 +337,6 @@ export default function useSchedulePage() {
         dismissNotice,
         retry,
         removeSelected,
+        removeSelectedOccurrence,
     }
 }

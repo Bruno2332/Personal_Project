@@ -1,3 +1,6 @@
+import type { AgendaDto, WeekDay } from "../model/agenda"
+
+
 export const WEEK_DAYS = [
     { value: 1, short: "SEG", long: "Segunda" },
     { value: 2, short: "TER", long: "Terça" },
@@ -76,7 +79,7 @@ export function durationLabel(minutes: number) {
     return String(minutes / 60).replace(".", ",") + " horas"
 }
 
-import type { AgendaDto, WeekDay } from "../model/agenda"
+
 export type AgendaEvent = {
     id: string
     sourceId: number
@@ -98,90 +101,140 @@ export const weekDayValues: WeekDay[] = [
     "Friday",
     "Saturday",
 ]
-export function agendaEvents(
-    rows: AgendaDto[],
-    start: Date,
-    days = 7,
-): AgendaEvent[] {
-    return rows
-        .flatMap((row) => {
-            if (row.id === null) return []
-            const dates = Array.from({ length: days }, (_, offset) =>
-                addDays(start, offset),
-            ).filter((date) => {
-                const iso = formatISODate(date)
-                return row.is_recurring
-                    ? row.week_day === weekDayValues[date.getDay()] &&
-                    !!row.recurrence_start_date &&
-                    iso >= row.recurrence_start_date &&
-                    (!row.recurrence_end_date || iso <= row.recurrence_end_date)
-                    : row.scheduled_date === iso
-            })
-            return dates.map((date) => ({
-                id: `${row.id}-${formatISODate(date)}`,
-                sourceId: row.id!,
-                kind:
-                    row.appointment_type === "Class"
-                        ? "aula" as const
-                        : "avaliacao" as const,
-                alunoId: row.student_id,
-                date,
-                horario: row.start_time.slice(0, 5),
-                duracaoMinutos:
-                    timeToMinutes(row.end_time) - timeToMinutes(row.start_time),
-                observacoes: row.notes,
-                recurring: row.is_recurring,
-                raw: row,
-            }))
-        })
-        .sort(
-            (a, b) =>
-                a.date.getTime() - b.date.getTime() ||
-                a.horario.localeCompare(b.horario),
-        )
+
+function appointmentOccursOn(
+	row: AgendaDto,
+	date: string,
+): boolean {
+	if (!row.is_recurring) {
+		return row.scheduled_date === date
+	}
+
+	if (row.excluded_dates?.includes(date)) {
+		return false
+	}
+
+	return (
+		!!row.recurrence_start_date &&
+		date >= row.recurrence_start_date &&
+		(!row.recurrence_end_date || date <= row.recurrence_end_date) &&
+		row.week_day === weekDayValues[parseLocalDate(date).getDay()]
+	)
 }
 
-// Compara as regras de recorrência sem gerar uma lista ilimitada de datas.
-export function appointmentsOverlap(a: AgendaDto, b: AgendaDto): boolean {
-    if (
-        !overlap(
-            a.start_time,
-            timeToMinutes(a.end_time) - timeToMinutes(a.start_time),
-            b.start_time,
-            timeToMinutes(b.end_time) - timeToMinutes(b.start_time),
-        )
-    )
-        return false
+export function agendaEvents(
+	rows: AgendaDto[],
+	start: Date,
+	days = 7,
+): AgendaEvent[] {
+	return rows
+		.flatMap((row) => {
+			if (row.id === null) return []
 
-    const occursOn = (row: AgendaDto, date: string) =>
-        row.is_recurring
-            ? !!row.recurrence_start_date &&
-            date >= row.recurrence_start_date &&
-            (!row.recurrence_end_date || date <= row.recurrence_end_date) &&
-            row.week_day === weekDayValues[parseLocalDate(date).getDay()]
-            : row.scheduled_date === date
+			const dates = Array.from({ length: days }, (_, offset) =>
+				addDays(start, offset),
+			).filter((date) =>
+				appointmentOccursOn(row, formatISODate(date)),
+			)
 
-    if (!a.is_recurring)
-        return !!a.scheduled_date && occursOn(b, a.scheduled_date)
-    if (!b.is_recurring)
-        return !!b.scheduled_date && occursOn(a, b.scheduled_date)
-    if (
-        !a.recurrence_start_date ||
-        !b.recurrence_start_date ||
-        !a.week_day ||
-        a.week_day !== b.week_day
-    )
-        return false
-    const start =
-        a.recurrence_start_date > b.recurrence_start_date
-            ? a.recurrence_start_date
-            : b.recurrence_start_date
-    const endA = a.recurrence_end_date ?? "9999-12-31"
-    const endB = b.recurrence_end_date ?? "9999-12-31"
-    const end = endA < endB ? endA : endB
-    if (start > end) return false
-    return (
-        formatISODate(firstOccurrence(start, weekDayValues.indexOf(a.week_day))) <=
-        end
-    )
+			return dates.map((date) => ({
+				id: `${row.id}-${formatISODate(date)}`,
+				sourceId: row.id!,
+				kind:
+					row.appointment_type === "Class"
+						? ("aula" as const)
+						: ("avaliacao" as const),
+				alunoId: row.student_id,
+				date,
+				horario: row.start_time.slice(0, 5),
+				duracaoMinutos:
+					timeToMinutes(row.end_time) -
+					timeToMinutes(row.start_time),
+				observacoes: row.notes,
+				recurring: row.is_recurring,
+				raw: row,
+			}))
+		})
+		.sort(
+			(a, b) =>
+				a.date.getTime() - b.date.getTime() ||
+				a.horario.localeCompare(b.horario),
+		)
+}
+
+export function appointmentsOverlap(
+	a: AgendaDto,
+	b: AgendaDto,
+): boolean {
+	if (
+		!overlap(
+			a.start_time,
+			timeToMinutes(a.end_time) - timeToMinutes(a.start_time),
+			b.start_time,
+			timeToMinutes(b.end_time) - timeToMinutes(b.start_time),
+		)
+	) {
+		return false
+	}
+
+	if (!a.is_recurring) {
+		return (
+			!!a.scheduled_date &&
+			appointmentOccursOn(b, a.scheduled_date)
+		)
+	}
+
+	if (!b.is_recurring) {
+		return (
+			!!b.scheduled_date &&
+			appointmentOccursOn(a, b.scheduled_date)
+		)
+	}
+
+	if (
+		!a.recurrence_start_date ||
+		!b.recurrence_start_date ||
+		!a.week_day ||
+		a.week_day !== b.week_day
+	) {
+		return false
+	}
+
+	const start =
+		a.recurrence_start_date > b.recurrence_start_date
+			? a.recurrence_start_date
+			: b.recurrence_start_date
+
+	const endA = a.recurrence_end_date ?? "9999-12-31"
+	const endB = b.recurrence_end_date ?? "9999-12-31"
+	const end = endA < endB ? endA : endB
+
+	if (start > end) return false
+
+	const excludedDates = new Set([
+		...(a.excluded_dates ?? []),
+		...(b.excluded_dates ?? []),
+	])
+
+	let date = firstOccurrence(
+		start,
+		weekDayValues.indexOf(a.week_day),
+	)
+
+	
+	for (let attempt = 0; attempt <= excludedDates.size; attempt++) {
+		if (date.getFullYear() > 9999) return false
+
+		const iso = formatISODate(date)
+
+		if (iso > end) return false
+
+		if (!excludedDates.has(iso)) {
+			return true
+		}
+
+		date = addDays(date, 7)
+	}
+
+	return false
 }

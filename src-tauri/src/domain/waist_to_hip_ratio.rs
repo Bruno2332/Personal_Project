@@ -16,14 +16,12 @@ pub fn waist_hip_ratio_calculate(waist_cm: Option<f64>, hip_cm: Option<f64>) -> 
     Some(waist_cm / hip_cm)
 }
 
-pub fn waist_hip_ratio_classification(
-    ratio_hundredths: Option<f64>,
-    age: i32,
+pub fn waist_hip_ratio_values(
     gender: Gender,
-) -> Option<WaistHipRiskClassification> {
-    let ratio_hundredths = ratio_hundredths?;
-
-    let (moderate_start, moderate_end, high_end) = match gender {
+    age: i32,
+) -> (f64, f64, f64) {
+    
+    let values = match gender {
         Gender::Male => match age {
             0..=29 => (0.83, 0.88, 0.94),
             30..=39 => (0.84, 0.91, 0.96),
@@ -40,6 +38,17 @@ pub fn waist_hip_ratio_classification(
             _ => (0.76, 0.83, 0.90),
         },
     };
+    values
+}
+
+pub fn waist_hip_ratio_classification(
+    ratio_hundredths: Option<f64>,
+    age: i32,
+    gender: Gender,
+) -> Option<WaistHipRiskClassification> {
+    let ratio_hundredths = ratio_hundredths?;
+
+    let (moderate_start, moderate_end, high_end) = waist_hip_ratio_values(gender, age);
 
     if ratio_hundredths < moderate_start {
         return Some(WaistHipRiskClassification::Low);
@@ -52,3 +61,4 @@ pub fn waist_hip_ratio_classification(
     }
     Some(WaistHipRiskClassification::VeryHigh)
 }
+

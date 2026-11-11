@@ -75,7 +75,11 @@ export type PhysicalAssessmentCompleteDto = {
     medium_ideal_weight: number
     max_ideal_weight: number
     hypertension_classification: HypertensionClassification | null
+
+    circumference_abdominal_high_risk: number | null
+    circumference_abdominal_very_high_risk: number | null
     circumference_abdominal_classification: AbdominalCircumferenceClassification | null
+
     fc_heart_rest_classification: FcRestClassification | null
     right_dynamometer_strength_classification: DynamometerStrengthClassification | null
     left_dynamometer_strength_classification: DynamometerStrengthClassification | null
@@ -83,8 +87,20 @@ export type PhysicalAssessmentCompleteDto = {
     kilos_fat_skinfolds: number | null
     lean_body_mass_percentage_skinfolds: number | null
     fat_percentage_skinfolds: number | null
-    ideal_weight_fat_percentage: number | null
-    weight_to_lose: number | null
+
+    ideal_weight_fat_percentage_min: number | null
+    ideal_weight_fat_percentage_max: number | null
+    ideal_weight_fat_percentage_health: number | null
+    ideal_weight_fat_percentage_overweight: number | null
+    ideal_fat_percentage_min: number | null
+    ideal_fat_percentage_max: number | null
+    ideal_fat_percentage_health: number | null
+    ideal_fat_percentage_overweight: number | null
+    weight_to_lose_min_percentage: number | null
+    weight_to_lose_max_percentage: number | null
+    weight_to_lose_health: number | null
+    weight_to_lose_overweight: number | null
+
     kilos_lean_body_mass_bioimpedance: number | null
     kilos_fat_bioimpedance: number | null
     lean_body_mass_percentage_bioimpedance: number | null
@@ -98,8 +114,13 @@ export type PhysicalAssessmentCompleteDto = {
     triceps_asymmetry_classification: StrengthAsymmetryClassification | null
     extensor_asymmetry_classification: StrengthAsymmetryClassification | null
     flexor_asymmetry_classification: StrengthAsymmetryClassification | null
+
     waist_hip_calculate: number | null
+    waist_hip_moderate_risk: number | null
+    waist_hip_high_risk: number | null
+    waist_hip_very_high_risk: number | null
     waist_hip_classification: WaistHipRiskClassification | null
+
     maximum_heart_rate: number
     vo2_assessments: Vo2AssessmentCompleteDto[]
     vo2_parameter: number | null

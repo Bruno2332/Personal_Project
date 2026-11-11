@@ -11,6 +11,7 @@ type Props = {
 	onEdit: () => void
 	removeSelected: () => void
 	busy: boolean
+	removeSelectedOccurrence: () => void
 }
 
 
@@ -20,6 +21,7 @@ export default function AppointmentDetails({
 	onClose,
 	onEdit,
 	removeSelected,
+	removeSelectedOccurrence,
 	busy,
 }: Props) {
 	const appointment = selectedEvent.raw
@@ -53,8 +55,8 @@ export default function AppointmentDetails({
 						<div>
 							<p
 								className={`text-xs uppercase tracking-wider font-medium ${isClass
-										? "text-[#a3e635]"
-										: "text-[#22d3ee]"
+									? "text-[#a3e635]"
+									: "text-[#22d3ee]"
 									}`}
 							>
 								{appointmentLabel}
@@ -108,27 +110,37 @@ export default function AppointmentDetails({
 
 					{appointment.is_recurring && (
 						<p className="mt-3 text-xs text-[#717171]">
-							Este é um horário fixo. Ao remover, todas as
-							ocorrências desta recorrência são excluídas.
+							Você pode excluir somente esta aula ou encerrar a
+							recorrência a partir de hoje, preservando o histórico.
 						</p>
 					)}
 				</div>
 
-				<div className="flex justify-between gap-3 px-6 py-4 border-t border-[#252525] bg-[#0f0f0f]">
+				<div className="flex flex-wrap justify-end gap-2 px-6 py-4 border-t border-[#252525] bg-[#0f0f0f]">
+					{appointment.is_recurring && (
+						<Button
+							type="button"
+							disabled={busy}
+							onClick={removeSelectedOccurrence}
+							className="px-3 py-2 text-xs text-red-400 hover:bg-red-400/10 rounded"
+						>
+							Excluir somente esta aula
+						</Button>
+					)}
+
 					<Button
+						type="button"
 						disabled={busy}
 						onClick={removeSelected}
 						className="px-3 py-2 text-xs text-red-400 hover:bg-red-400/10 rounded"
 					>
-						Remover{" "}
 						{appointment.is_recurring
-							? "recorrência"
-							: isClass
-								? "aula"
-								: "agendamento"}
+							? "Encerrar recorrência"
+							: "Excluir agendamento"}
 					</Button>
 
 					<Button
+						type="button"
 						disabled={busy}
 						onClick={onEdit}
 						className="px-4 py-2 text-sm text-[#a3e635] border border-[#252525] rounded"
@@ -137,6 +149,7 @@ export default function AppointmentDetails({
 					</Button>
 
 					<Button
+						type="button"
 						disabled={busy}
 						onClick={onClose}
 						className="px-4 py-2 text-sm text-white bg-[#252525] rounded hover:bg-[#303030]"

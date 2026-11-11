@@ -50,6 +50,7 @@ export const strengthFields: MeasurementField[] = [
 
 export const assessmentTabs = [
     { id: "general", label: "Dados gerais" },
+    { id: "goals", label: "Objetivos" },
     { id: "circumferences", label: "Circunferências" },
     { id: "composition", label: "Composição corporal" },
     { id: "strength", label: "Força" },

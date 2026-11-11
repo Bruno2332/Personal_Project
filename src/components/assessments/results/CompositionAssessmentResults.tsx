@@ -63,6 +63,7 @@ export default function CompositionAssessmentResults({ result: r }: Props) {
 					{value(r.lean_body_mass_percentage_skinfolds, "%")}
 				</div>
 			</Result>
+			
 
 			{skinfoldFields.map((f) => (
 				<Result key={f.name} label={f.label}>

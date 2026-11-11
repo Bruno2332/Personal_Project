@@ -116,6 +116,14 @@ export default function ContractPanel({ studentId, onClose }: Props) {
 
 				<div className="sticky bottom-0 bg-[#111] border-t border-[#252525] px-6 py-4 flex justify-end gap-3">
 					<Button
+						type="button"
+						onClick={onClose}
+						disabled={methods.formState.isSubmitting}
+						className="px-4 py-2 text-sm text-[#717171] hover:text-white border border-[#252525] rounded transition-colors"
+					>
+						Cancelar
+					</Button>
+					<Button
 						type="submit"
 						disabled={
 							contract.isSubmitting ||

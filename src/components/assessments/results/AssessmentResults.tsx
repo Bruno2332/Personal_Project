@@ -7,6 +7,7 @@ import CompositionAssessmentResults from "./CompositionAssessmentResults"
 import StrengthAssessmentResults from "./StrengthAssessmentResults"
 import Vo2AssessmentResults from "./Vo2AssessmentResults"
 import PhotosAssessmentResults from "./PhotosAssessmentResults"
+import AssessmentGoals from "./AssessmentGoals"
 
 type Props = {
 	result: PhysicalAssessmentCompleteDto
@@ -18,6 +19,10 @@ export default function AssessmentResults({ result, tab }: Props) {
 		<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
 			{tab === "general" && (
 				<GeneralAssessmentResults result={result} />
+			)}
+
+			{tab === "goals" && (
+				<AssessmentGoals result={result} />
 			)}
 
 			{tab === "circumferences" && (

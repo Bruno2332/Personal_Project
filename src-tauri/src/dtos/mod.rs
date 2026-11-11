@@ -11,3 +11,4 @@ pub mod physical_assessment_photos_dto;
 pub mod student_dto;
 pub mod user_dto;
 pub mod vo2_assessment_dto;
+pub mod agenda_exclusion_dto;

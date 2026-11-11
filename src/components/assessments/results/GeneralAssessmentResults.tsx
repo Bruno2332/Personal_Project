@@ -108,30 +108,45 @@ export default function GeneralAssessmentResults({ result: r }: Props) {
 					{value(a.resting_heart_rate_bpm, " bpm")}
 				</div>
 			</Result>
+			
+			<Result label="Objetivo final">
+				<div>
+					{value(r.ideal_weight_fat_percentage_min, " Kg a ")}
+					{value(r.ideal_weight_fat_percentage_max, " Kg")}
+				</div>
 
-			<Result label="Peso alvo">
+			</Result>
+
+
+			<Result label="Objetivo atual">
+				<div className="text-[#ff8c00]">
+					{
+						r.weight_to_lose_overweight != null
+							? <div className="text-[#ff8c00]">
+								{`- ${value(r.weight_to_lose_overweight)} Kg`}
+							</div>
+							: <p className="text-[#3697ff]">Sem gordura a perder</p>
+					}
+				</div>
+			</Result>
+			<Result label="Peso Alvo para sobrepeso">
 				<div>
 					{
-						r.ideal_weight_fat_percentage != null
+						r.ideal_weight_fat_percentage_min != null
 							? <div className="text-[#ff8c00]">
-								{value(r.ideal_weight_fat_percentage, " Kg")}
-								</div>
+								{value(r.ideal_weight_fat_percentage_overweight, " Kg")}
+							</div>
 							: <p className="text-[#3697ff]">Peso Atual</p>
 					}
 				</div>
 			</Result>
 
-			<Result label="Peso de gordura a perder">
-				<div className="text-[#ff8c00]">
-					{
-						r.weight_to_lose != null
-							? <div className="text-[#ff8c00]">
-								{value(r.weight_to_lose, " Kg")}
-								</div>
-							: <p className="text-[#3697ff]">Sem gordura a perder</p>
-					}
+			<Result label="Peso Alvo para normalidade">
+				<div>
+					{value(r.ideal_weight_fat_percentage_health)}
 				</div>
 			</Result>
+			
 		</>
 	)
 }

@@ -1,12 +1,18 @@
 import { save } from "@tauri-apps/plugin-dialog"
 import { writeFile } from "@tauri-apps/plugin-fs"
+
 import type { PhysicalAssessmentCompleteDto } from "../model/physicalAssessment"
+
 import { findStudentById } from "./studentService"
 import { findUserById } from "./userService"
 import { findAssessmentsByStudentId } from "./physicalAssessmentService"
+
 import { createAssessmentPdf } from "../reports/assessmentPdf"
 import { captureAssessmentChart } from "../reports/captureAssessmentChart"
+import { captureAssessmentVo2Chart } from "../reports/captureAssessmentVo2Chart"
+
 import { assessmentView } from "../utils/assessments"
+
 
 export async function exportAssessmentPdf(
     result: PhysicalAssessmentCompleteDto,
@@ -77,11 +83,19 @@ export async function exportAssessmentPdf(
             )
         })[0]
 
-    const chartImage = previousAssessment
-        ? await captureAssessmentChart([
+    const chartAssessments = previousAssessment
+        ? [
             assessmentView(previousAssessment),
             assessmentView(result),
-        ])
+        ]
+        : [assessmentView(result)]
+
+    const chartImage = previousAssessment
+        ? await captureAssessmentChart(chartAssessments)
+        : null
+
+    const vo2ChartImage = previousAssessment
+        ? await captureAssessmentVo2Chart(chartAssessments)
         : null
 
     const bytes = await createAssessmentPdf(
@@ -89,6 +103,7 @@ export async function exportAssessmentPdf(
         student,
         user,
         chartImage,
+        vo2ChartImage,
     )
 
     await writeFile(path, bytes)

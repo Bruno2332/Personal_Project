@@ -226,7 +226,7 @@ async fn monthly_charge_generation_is_idempotent_and_only_targets_active_monthly
         Some(true),
         Some(crate::models::financial_records::TransactionType::Income),
         Some("Pending".into()),
-        Some("2026-11".into()),
+        None,
         Some(contract_id),
     )
     .await
@@ -234,4 +234,333 @@ async fn monthly_charge_generation_is_idempotent_and_only_targets_active_monthly
     assert_eq!(page.total, 1);
     assert_eq!(page.items.len(), 1);
     assert_eq!(page.items[0].student_id, Some(student_id));
+}
+
+#[tokio::test]
+async fn monthly_adjustment_preserves_existing_charges_and_changes_next_month() {
+    use crate::{
+        dtos::contract_dto::ContractDto,
+        models::students::Student,
+        tests::factories::contract_factory::valid_contract,
+    };
+
+    let pool = create_test_database().await;
+
+    let student = StudentRepository::insert(
+        &pool,
+        Student::from(valid_student_dto()),
+    )
+        .await
+        .unwrap();
+
+    let student_id = student.id.unwrap();
+
+    let mut monthly = valid_contract();
+    monthly.id = None;
+    monthly.student_id = student_id;
+    monthly.billing_type = BillingType::Monthly;
+    monthly.service_type = ServiceType::Training;
+    monthly.contract_status = ContractStatus::Active;
+    monthly.amount_cents = 10_000;
+    monthly.installment_count = 1;
+    monthly.duration_months = None;
+    monthly.end_date = None;
+    monthly.start_date =
+        NaiveDate::from_ymd_opt(2026, 1, 1).unwrap();
+    monthly.first_due_date =
+        Some(NaiveDate::from_ymd_opt(2026, 1, 10).unwrap());
+    monthly.due_day = Some(10);
+
+    let mut tx = pool.begin().await.unwrap();
+
+    let saved = ContractRepository::insert(
+        &mut *tx,
+        monthly,
+    )
+        .await
+        .unwrap();
+
+    let contract_id = saved.id.unwrap();
+
+    for month in 1..=3 {
+        let inserted =
+            FinancialRecordsConnectionRepository::generate_monthly_charges(
+                &mut *tx,
+                NaiveDate::from_ymd_opt(2026, month, 1).unwrap(),
+            )
+                .await
+                .unwrap();
+
+        assert_eq!(inserted, 1);
+    }
+
+    let mut records =
+        FinancialRecordsConnectionRepository::find_all_by_contract_id(
+            &mut *tx,
+            contract_id,
+        )
+            .await
+            .unwrap();
+
+    records.sort_by_key(|record| record.due_date);
+    assert_eq!(records.len(), 3);
+
+    for (index, mut record) in records.into_iter().enumerate() {
+        record.status_transaction = match index {
+            0 => TransactionStatus::Paid,
+            1 => TransactionStatus::Cancelled,
+            _ => TransactionStatus::Pending,
+        };
+
+        record.payment_date = if index == 0 {
+            Some(NaiveDate::from_ymd_opt(2026, 1, 10).unwrap())
+        } else {
+            None
+        };
+
+        FinancialRecordsConnectionRepository::update(
+            &mut *tx,
+            record.id.unwrap(),
+            record,
+        )
+            .await
+            .unwrap();
+    }
+
+    let mut before =
+        FinancialRecordsConnectionRepository::find_all_by_contract_id(
+            &mut *tx,
+            contract_id,
+        )
+            .await
+            .unwrap();
+
+    before.sort_by_key(|record| record.id);
+
+    // Compara todos os campos dos lançamentos existentes.
+    let before_snapshot = serde_json::to_value(&before).unwrap();
+
+    tx.commit().await.unwrap();
+
+    let mut request = valid_create_contract_request();
+    request.contract_dto = ContractDto::from(saved);
+    request.contract_dto.amount_cents = 15_000;
+
+    let mut tx = pool.begin().await.unwrap();
+
+    let updated = contract_service::update(
+        &mut *tx,
+        contract_id,
+        request,
+    )
+        .await
+        .unwrap();
+
+    assert_eq!(updated.amount_cents, 15_000);
+
+    let mut after =
+        FinancialRecordsConnectionRepository::find_all_by_contract_id(
+            &mut *tx,
+            contract_id,
+        )
+            .await
+            .unwrap();
+
+    after.sort_by_key(|record| record.id);
+
+    assert_eq!(
+        serde_json::to_value(&after).unwrap(),
+        before_snapshot,
+        "O reajuste não deve modificar cobranças existentes."
+    );
+
+    let april = NaiveDate::from_ymd_opt(2026, 4, 1).unwrap();
+
+    let inserted =
+        FinancialRecordsConnectionRepository::generate_monthly_charges(
+            &mut *tx,
+            april,
+        )
+            .await
+            .unwrap();
+
+    assert_eq!(inserted, 1);
+
+    let inserted_again =
+        FinancialRecordsConnectionRepository::generate_monthly_charges(
+            &mut *tx,
+            april,
+        )
+            .await
+            .unwrap();
+
+    assert_eq!(inserted_again, 0);
+
+    let records =
+        FinancialRecordsConnectionRepository::find_all_by_contract_id(
+            &mut *tx,
+            contract_id,
+        )
+            .await
+            .unwrap();
+
+    assert_eq!(records.len(), 4);
+
+    let new_charge = records
+        .iter()
+        .find(|record| {
+            record.due_date
+                == NaiveDate::from_ymd_opt(2026, 4, 10).unwrap()
+        })
+        .unwrap();
+
+    assert_eq!(new_charge.amount_cent, 15_000);
+    assert_eq!(
+        new_charge.status_transaction,
+        TransactionStatus::Pending,
+    );
+
+    let new_charge_id = new_charge.id;
+
+    let mut old_charges: Vec<_> = records
+        .into_iter()
+        .filter(|record| record.id != new_charge_id)
+        .collect();
+
+    old_charges.sort_by_key(|record| record.id);
+
+    assert_eq!(
+        serde_json::to_value(&old_charges).unwrap(),
+        before_snapshot,
+    );
+
+    tx.commit().await.unwrap();
+}
+
+#[tokio::test]
+async fn package_adjustment_still_rejects_changes_to_paid_or_cancelled_installments() {
+    use crate::{
+        errors::app_errors::AppError,
+        models::students::Student,
+    };
+
+    for status in [
+        TransactionStatus::Paid,
+        TransactionStatus::Cancelled,
+    ] {
+        let pool = create_test_database().await;
+
+        let student = StudentRepository::insert(
+            &pool,
+            Student::from(valid_student_dto()),
+        )
+            .await
+            .unwrap();
+
+        let student_id = student.id.unwrap();
+
+        let mut request = valid_create_contract_request();
+        request.contract_dto.student_id = student_id;
+        request.contract_dto.amount_cents = 9_000;
+        request.contract_dto.installment_count = 3;
+
+        let mut tx = pool.begin().await.unwrap();
+
+        let created = contract_service::insert(
+            &mut *tx,
+            request,
+        )
+            .await
+            .unwrap();
+
+        let contract_id = created.id.unwrap();
+
+        let mut records =
+            FinancialRecordsConnectionRepository::find_all_by_contract_id(
+                &mut *tx,
+                contract_id,
+            )
+                .await
+                .unwrap();
+
+        let mut record = records.remove(0);
+        record.status_transaction = status;
+        record.payment_date = if status == TransactionStatus::Paid {
+            Some(record.due_date)
+        } else {
+            None
+        };
+
+        FinancialRecordsConnectionRepository::update(
+            &mut *tx,
+            record.id.unwrap(),
+            record,
+        )
+            .await
+            .unwrap();
+
+        let mut before =
+            FinancialRecordsConnectionRepository::find_all_by_contract_id(
+                &mut *tx,
+                contract_id,
+            )
+                .await
+                .unwrap();
+
+        before.sort_by_key(|record| record.id);
+        let snapshot = serde_json::to_value(&before).unwrap();
+
+        tx.commit().await.unwrap();
+
+        let mut request = valid_create_contract_request();
+        request.contract_dto = created;
+        request.contract_dto.amount_cents = 12_000;
+
+        let mut tx = pool.begin().await.unwrap();
+
+        let result = contract_service::update(
+            &mut *tx,
+            contract_id,
+            request,
+        )
+            .await;
+
+        assert!(
+            matches!(result, Err(AppError::Validation { .. })),
+            "Deveria impedir alteração de parcela {status:?}."
+        );
+
+        tx.rollback().await.unwrap();
+
+        let mut connection = pool.acquire().await.unwrap();
+
+        let contracts = ContractRepository::find_all_by_student_id(
+            &mut *connection,
+            student_id,
+        )
+            .await
+            .unwrap();
+
+        let contract = contracts
+            .iter()
+            .find(|contract| contract.id == Some(contract_id))
+            .unwrap();
+
+        assert_eq!(contract.amount_cents, 9_000);
+
+        let mut after =
+            FinancialRecordsConnectionRepository::find_all_by_contract_id(
+                &mut *connection,
+                contract_id,
+            )
+                .await
+                .unwrap();
+
+        after.sort_by_key(|record| record.id);
+
+        assert_eq!(
+            serde_json::to_value(&after).unwrap(),
+            snapshot,
+        );
+    }
 }

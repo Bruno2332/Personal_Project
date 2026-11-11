@@ -8,3 +8,4 @@ pub mod physical_assessment_photos;
 pub mod students;
 pub mod user;
 pub mod vo2_assessment;
+pub mod agenda_exclusions;

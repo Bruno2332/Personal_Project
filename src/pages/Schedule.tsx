@@ -106,6 +106,9 @@ export default function Schedule() {
 					onClose={page.closeDetails}
 					onEdit={page.editSelected}
 					removeSelected={() => void page.removeSelected()}
+					removeSelectedOccurrence={() =>
+						void page.removeSelectedOccurrence()
+					}
 					busy={page.busy}
 				/>
 			)}

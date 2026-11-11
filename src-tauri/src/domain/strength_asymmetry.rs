@@ -7,7 +7,7 @@ pub enum StrengthAsymmetryClassification {
     SevereAsymmetry,
 }
 
-pub fn strength_asymmetry(left_side: Option<i32>, right_side: Option<i32>) -> Option<f64> {
+pub fn strength_asymmetry(left_side: Option<f64>, right_side: Option<f64>) -> Option<f64> {
     let left_side = left_side? as f64;
     let right_side = right_side? as f64;
 

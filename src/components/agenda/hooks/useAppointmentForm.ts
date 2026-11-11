@@ -145,10 +145,19 @@ export default function useAppointmentForm({
                 endDate,
             )
 
+            const persistedAppointment = existingAppointments.find(
+                (appointment) => appointment.id === savedId,
+            )
+
+            const candidate: AgendaDto = {
+                ...dto,
+                excluded_dates: persistedAppointment?.excluded_dates ?? [],
+            }
+
             const hasConflict = existingAppointments.some(
                 (appointment) =>
                     appointment.id !== savedId &&
-                    appointmentsOverlap(dto, appointment),
+                    appointmentsOverlap(candidate, appointment),
             )
 
             if (hasConflict) {

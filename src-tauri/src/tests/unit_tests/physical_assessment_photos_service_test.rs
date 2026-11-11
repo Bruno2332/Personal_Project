@@ -197,3 +197,4 @@ async fn delete_returns_not_found_without_touching_file_when_photo_is_missing() 
 
     is_not_found(result, "Foto não encontrada.");
 }
+

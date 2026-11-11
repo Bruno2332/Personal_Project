@@ -16,4 +16,5 @@ export type AgendaDto = {
     notes: string
     created_at: string
     updated_at: string
+    excluded_dates?: string[]
 }

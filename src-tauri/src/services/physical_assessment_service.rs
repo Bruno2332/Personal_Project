@@ -1,4 +1,4 @@
-use crate::domain::abdominal_circ_classification::abdominal_circumference_calculate;
+use crate::domain::abdominal_circ_classification::{abdominal_circumference_calculate, values_abdominal_circumference};
 use crate::domain::bmi::adult_classification::{
     adult_bmi_classification, calculate_ideal_weight_adult,
 };
@@ -20,9 +20,7 @@ use crate::domain::skin_folds::{
 };
 use crate::domain::strength_asymmetry::{asymmetry_classification, strength_asymmetry};
 use crate::domain::vo2_classification::{calculate_vo2_max, vo2_classification};
-use crate::domain::waist_to_hip_ratio::{
-    waist_hip_ratio_calculate, waist_hip_ratio_classification,
-};
+use crate::domain::waist_to_hip_ratio::{waist_hip_ratio_calculate, waist_hip_ratio_classification, waist_hip_ratio_values};
 use crate::dtos::contract_dto::CreateContractRequest;
 use crate::dtos::physical_assessment_dto::{PhysicalAssessmentCompleteDto, PhysicalAssessmentDto};
 use crate::dtos::vo2_assessment_dto::{Vo2AssessmentCompleteDto, Vo2AssessmentDto};
@@ -323,6 +321,9 @@ fn build_complete_dto(
         ),
     };
 
+    let abdominal_circumference_risk = values_abdominal_circumference(gender);
+    let waist_to_hip_risk = waist_hip_ratio_values(gender, age);
+
     let fat_percentage_skinfolds = fat_percentage(
         gender,
         age,
@@ -383,6 +384,9 @@ fn build_complete_dto(
             entity.systolic_pressure,
             entity.diastolic_pressure,
         ),
+
+        circumference_abdominal_high_risk: Some(abdominal_circumference_risk.0),
+        circumference_abdominal_very_high_risk: Some(abdominal_circumference_risk.1),
         circumference_abdominal_classification: abdominal_circumference_calculate(
             gender,
             entity.abdomen_circumference_cm,
@@ -406,8 +410,18 @@ fn build_complete_dto(
         lean_body_mass_percentage_skinfolds: fat_percentage_skinfolds.map(|fat| 100.0 - fat),
         fat_percentage_skinfolds,
 
-        ideal_weight_fat_percentage: ideal_weight,
-        weight_to_lose: ideal_weight.map(|ideal| entity.weight_kg - ideal),
+        ideal_weight_fat_percentage_min: ideal_weight.map(|values| values.ideal_weight_min),
+        ideal_weight_fat_percentage_max: ideal_weight.map(|values| values.ideal_weight_max),
+        ideal_weight_fat_percentage_health: ideal_weight.map(|values| values.normal_weight_target),
+        ideal_weight_fat_percentage_overweight: ideal_weight.map(|values| values.overweight_target),
+        ideal_fat_percentage_min: ideal_weight.map(|values| values.ideal_percentage_min),
+        ideal_fat_percentage_max: ideal_weight.map(|values| values.ideal_percentage_max),
+        ideal_fat_percentage_health: ideal_weight.map(|values| values.ideal_percentage_health),
+        ideal_fat_percentage_overweight: ideal_weight.map(|values| values.ideal_percentage_overweight),
+        weight_to_lose_min_percentage: ideal_weight.map(|values| if values.ideal_weight_min > 0.0 {entity.weight_kg - values.ideal_weight_min} else {0.0}),
+        weight_to_lose_max_percentage: ideal_weight.map(|values| if values.ideal_weight_max > 0.0 {(entity.weight_kg - values.ideal_weight_max).max(0.0)} else {0.0}),
+        weight_to_lose_health: ideal_weight.map(|values| if values.normal_weight_target > 0.0 {(entity.weight_kg - values.normal_weight_target).max(0.0)} else {0.0}),
+        weight_to_lose_overweight: ideal_weight.map(|values| if values.overweight_target > 0.0 {(entity.weight_kg - values.overweight_target).max(0.0)} else {0.0}),
 
         kilos_lean_body_mass_bioimpedance: kilos_fat_bioimpedance.map(|fat| entity.weight_kg - fat),
         kilos_fat_bioimpedance,
@@ -437,6 +451,9 @@ fn build_complete_dto(
         flexor_asymmetry_classification: asymmetry_classification(flexor_asymmetry),
 
         waist_hip_calculate: ratio_hundredths,
+        waist_hip_moderate_risk: Some(waist_to_hip_risk.0),
+        waist_hip_high_risk: Some(waist_to_hip_risk.1),
+        waist_hip_very_high_risk: Some(waist_to_hip_risk.2),
         waist_hip_classification: waist_hip_ratio_classification(ratio_hundredths, age, gender),
 
         maximum_heart_rate: 220 - age,

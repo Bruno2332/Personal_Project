@@ -451,3 +451,192 @@ async fn update_validates_contract_and_batches_vo2_deletes_updates_and_inserts()
 
     assert_eq!(result.id, Some(21));
 }
+
+async fn load_assessment_goals_for_test(
+    assessment: PhysicalAssessment,
+) -> crate::dtos::physical_assessment_dto::PhysicalAssessmentCompleteDto {
+    let mut students = MockStudentRepository::new();
+
+    students
+        .expect_find_by_id()
+        .with(eq(7))
+        .times(1)
+        .returning(|_| Ok(Some(valid_student())));
+
+    let mut assessments = MockPhysicalAssessmentPoolRepository::new();
+
+    assessments
+        .expect_find_all_by_student_id()
+        .with(eq(7))
+        .times(1)
+        .return_once(move |_| Ok(vec![assessment]));
+
+    let mut vo2 = MockVo2AssessmentPoolRepository::new();
+
+    vo2.expect_find_all_by_student_id()
+        .with(eq(7))
+        .times(1)
+        .returning(|_| Ok(Vec::new()));
+
+    let repository = AssessmentReadMocks {
+        students,
+        assessments,
+        vo2,
+    };
+
+    let mut results =
+        physical_assessment_service::find_all_by_student_id(
+            &repository,
+            7,
+        )
+            .await
+            .unwrap();
+
+    assert_eq!(results.len(), 1);
+
+    results.remove(0)
+}
+
+fn assert_goal_value(actual: Option<f64>, expected: f64) {
+    let actual = actual.expect("O objetivo deveria estar preenchido.");
+
+    assert!(
+        (actual - expected).abs() < 0.000001,
+        "Esperado {expected}, recebido {actual}",
+    );
+}
+
+#[tokio::test]
+async fn assessment_maps_weight_goals_and_losses_to_complete_dto() {
+    let mut assessment = valid_physical_assessment();
+
+    assessment.triceps_skinfold_mm = Some(30.0);
+    assessment.chest_skinfold_mm = Some(30.0);
+    assessment.midaxillary_skinfold_mm = Some(30.0);
+    assessment.subscapular_skinfold_mm = Some(30.0);
+    assessment.abdominal_skinfold_mm = Some(30.0);
+    assessment.suprailiac_skinfold_mm = Some(30.0);
+    assessment.thigh_skinfold_mm = Some(30.0);
+
+    let result = load_assessment_goals_for_test(assessment).await;
+
+    // Factory: homem de 35 anos na avaliação, 80 kg.
+    assert_eq!(result.age, 35);
+
+    assert_goal_value(
+        result.fat_percentage_skinfolds,
+        28.34498433540972,
+    );
+
+    assert_goal_value(
+        result.ideal_weight_fat_percentage_min,
+        66.65582852520026,
+    );
+    assert_goal_value(
+        result.ideal_weight_fat_percentage_max,
+        69.90733235569783,
+    );
+    assert_goal_value(
+        result.ideal_weight_fat_percentage_health,
+        72.56204117933193,
+    );
+    assert_goal_value(
+        result.ideal_weight_fat_percentage_overweight,
+        76.4320167088963,
+    );
+
+    assert_goal_value(
+        result.weight_to_lose_min_percentage,
+        13.34417147479974,
+    );
+    assert_goal_value(
+        result.weight_to_lose_max_percentage,
+        10.09266764430217,
+    );
+    assert_goal_value(
+        result.weight_to_lose_health,
+        7.43795882066807,
+    );
+    assert_goal_value(
+        result.weight_to_lose_overweight,
+        3.5679832911037,
+    );
+
+    assert_eq!(result.ideal_fat_percentage_min, Some(14.0));
+    assert_eq!(result.ideal_fat_percentage_max, Some(18.0));
+    assert_eq!(result.ideal_fat_percentage_health, Some(21.0));
+    assert_eq!(result.ideal_fat_percentage_overweight, Some(25.0));
+
+    assert_eq!(
+        result.circumference_abdominal_high_risk,
+        Some(94.0),
+    );
+    assert_eq!(
+        result.circumference_abdominal_very_high_risk,
+        Some(102.0),
+    );
+
+    assert_eq!(result.waist_hip_moderate_risk, Some(0.84));
+    assert_eq!(result.waist_hip_high_risk, Some(0.91));
+    assert_eq!(result.waist_hip_very_high_risk, Some(0.96));
+}
+
+#[tokio::test]
+async fn below_reference_only_minimum_weight_adjustment_can_be_negative() {
+    // Factory: sete pregas de 10 mm, homem de 35 anos e 80 kg.
+    let result =
+        load_assessment_goals_for_test(valid_physical_assessment())
+            .await;
+
+    assert_goal_value(
+        result.ideal_weight_fat_percentage_min,
+        82.95194270945785,
+    );
+
+    assert_goal_value(
+        result.weight_to_lose_min_percentage,
+        -2.95194270945785,
+    );
+
+    assert_eq!(result.weight_to_lose_max_percentage, Some(0.0));
+    assert_eq!(result.weight_to_lose_health, Some(0.0));
+    assert_eq!(result.weight_to_lose_overweight, Some(0.0));
+}
+
+#[tokio::test]
+async fn missing_skinfold_removes_fat_goals_but_preserves_other_references() {
+    let mut assessment = valid_physical_assessment();
+    assessment.triceps_skinfold_mm = None;
+
+    let result = load_assessment_goals_for_test(assessment).await;
+
+    assert_eq!(result.fat_percentage_skinfolds, None);
+
+    assert_eq!(result.ideal_weight_fat_percentage_min, None);
+    assert_eq!(result.ideal_weight_fat_percentage_max, None);
+    assert_eq!(result.ideal_weight_fat_percentage_health, None);
+    assert_eq!(result.ideal_weight_fat_percentage_overweight, None);
+
+    assert_eq!(result.ideal_fat_percentage_min, None);
+    assert_eq!(result.ideal_fat_percentage_max, None);
+    assert_eq!(result.ideal_fat_percentage_health, None);
+    assert_eq!(result.ideal_fat_percentage_overweight, None);
+
+    assert_eq!(result.weight_to_lose_min_percentage, None);
+    assert_eq!(result.weight_to_lose_max_percentage, None);
+    assert_eq!(result.weight_to_lose_health, None);
+    assert_eq!(result.weight_to_lose_overweight, None);
+
+    assert_eq!(
+        result.circumference_abdominal_high_risk,
+        Some(94.0),
+    );
+    assert_eq!(
+        result.circumference_abdominal_very_high_risk,
+        Some(102.0),
+    );
+
+    assert_eq!(result.waist_hip_moderate_risk, Some(0.84));
+    assert_eq!(result.waist_hip_high_risk, Some(0.91));
+    assert_eq!(result.waist_hip_very_high_risk, Some(0.96));
+}

@@ -15,7 +15,7 @@ type Props = {
 }
 
 export default function StudentModal({ student, onClose }: Props) {
-	const form = useStudentForm(student)
+	const form = useStudentForm(student, onClose)
 	const { methods } = form
 
 	useEffect(() => {

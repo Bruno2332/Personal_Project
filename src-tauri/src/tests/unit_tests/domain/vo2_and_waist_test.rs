@@ -77,9 +77,9 @@ fn waist_hip_ratio_requires_both_measurements_and_classifies_risk() {
 
 #[test]
 fn strength_asymmetry_handles_both_sides_and_zero_maximum() {
-    assert_eq!(strength_asymmetry(Some(10), None), None);
-    assert_eq!(strength_asymmetry(Some(0), Some(0)), None);
-    approximately(strength_asymmetry(Some(80), Some(100)).unwrap(), 20.0);
+    assert_eq!(strength_asymmetry(Some(10.0), None), None);
+    assert_eq!(strength_asymmetry(Some(0.0), Some(0.0)), None);
+    approximately(strength_asymmetry(Some(80.0), Some(100.0)).unwrap(), 20.0);
     assert_eq!(
         asymmetry_classification(Some(9.99)),
         Some(StrengthAsymmetryClassification::NormalAsymmetry)

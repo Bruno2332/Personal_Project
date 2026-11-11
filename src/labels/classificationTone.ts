@@ -34,7 +34,7 @@ export const pressureTones: Record<HypertensionClassification, ClassificationTon
 export const abdomenTones: Record<AbdominalCircumferenceClassification, ClassificationTone> =
 {
     LowRisk: "normal",
-    HighRisk: "risk",
+    HighRisk: "attention",
     VeryHighRisk: "risk",
 }
 export const dynamometerTones: Record<DynamometerStrengthClassification, ClassificationTone> =

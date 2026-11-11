@@ -7,3 +7,4 @@ pub mod physical_assessment_handler;
 pub mod physical_assessment_photos_handler;
 pub mod student_handler;
 pub mod user_handler;
+pub mod agenda_exclusion_handler;

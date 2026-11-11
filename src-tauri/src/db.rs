@@ -105,7 +105,7 @@ pub async fn init(data_dir: &Path) -> Result<SqlitePool, Box<dyn std::error::Err
         return Err(error.into());
     }
 
-    println!("Banco SQLCipher: {}", database_path.display());
+    
     #[cfg(debug_assertions)]
     if std::env::var("RUN_DEV_SEED").as_deref() == Ok("1") {
         let seed: &'static str = include_str!(concat!(

@@ -22,8 +22,11 @@ export default function ContractFields({
 	>()
 	const serviceType = watch("service_type")
 	const billingType = watch("billing_type")
+	const paymentMethod = watch("payment_method")
 	const isAssessment = assessmentOnly || serviceType === "PhysicalAssessment"
 	const isMonthly = !isAssessment && billingType === "Monthly"
+	const isCreditCard = paymentMethod === "CreditCard"
+
 
 	useEffect(() => {
 		if (isMonthly) {
@@ -118,23 +121,26 @@ export default function ContractFields({
 
 			{!isAssessment && (
 				<>
-
-					<FormInput
-						name="first_due_date"
-						label="Primeiro vencimento"
-						type="date"
-						nullable
-					/>
-					<FormInput
-						name="due_day"
-						label="Dia do vencimento"
-						type="number"
-						min={1}
-						max={28}
-						step={1}
-						maxLength={2}
-						required
-					/>
+					{!isCreditCard &&
+						<>
+							<FormInput
+								name="first_due_date"
+								label="Primeiro vencimento"
+								type="date"
+								nullable
+							/>
+							<FormInput
+								name="due_day"
+								label="Dia do vencimento"
+								type="number"
+								min={1}
+								max={28}
+								step={1}
+								maxLength={2}
+								required
+							/>
+						</>
+					}
 					<FormInput
 						name="sessions_per_week"
 						label="Aulas por semana"

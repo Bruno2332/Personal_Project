@@ -8,7 +8,7 @@ import { FormInput, FormSelect, FormTextArea } from "../../ui/Fields"
 import { agendaInputClass } from "../../ui/FormField"
 import { Button } from "../../ui/Button"
 import { ErrorMessage } from "../../ui/Feedback"
-
+import { useEffect } from "react"
 
 
 type Props = {
@@ -36,6 +36,14 @@ export default function AppointmentFields({
 		control,
 		name: "is_recurring",
 	})
+
+	useEffect(() => {
+		if (appointmentType === "Assessment") {
+			setValue("is_recurring", false, {
+				shouldDirty: true,
+			})
+		}
+	}, [appointmentType, setValue])
 
 	return (
 		<div className="space-y-5">
@@ -100,81 +108,79 @@ export default function AppointmentFields({
 					</Button>
 				</div>
 			)}
-			{appointmentType === "Class" &&
-				<>
-					<fieldset className="space-y-2">
-						<legend className="text-xs text-[#717171] uppercase tracking-wider font-medium">
-							Repetição
-						</legend>
+			{appointmentType === "Class" && (
+				<fieldset className="space-y-2">
+					<legend className="text-xs text-[#717171] uppercase tracking-wider font-medium">
+						Repetição
+					</legend>
 
-						<div className="grid grid-cols-2 gap-2">
-							{[
-								{ value: true, label: "Toda semana" },
-								{ value: false, label: "Somente nesta data" },
-							].map((option) => (
-								<Button
-									key={String(option.value)}
-									type="button"
-									aria-pressed={isRecurring === option.value}
-									onClick={() =>
-										setValue("is_recurring", option.value, {
-											shouldDirty: true,
-										})
-									}
-									className={`px-3 py-2 text-sm rounded border transition-colors ${isRecurring === option.value
+					<div className="grid grid-cols-2 gap-2">
+						{[
+							{ value: true, label: "Toda semana" },
+							{ value: false, label: "Somente nesta data" },
+						].map((option) => (
+							<Button
+								key={String(option.value)}
+								type="button"
+								aria-pressed={isRecurring === option.value}
+								onClick={() =>
+									setValue("is_recurring", option.value, {
+										shouldDirty: true,
+									})
+								}
+								className={`px-3 py-2 text-sm rounded border transition-colors ${isRecurring === option.value
 										? "border-[#a3e635]/30 bg-[#a3e635]/10 text-[#a3e635]"
 										: "border-[#252525] text-[#717171] hover:text-white"
-										}`}
-								>
-									{option.label}
-								</Button>
-							))}
-						</div>
-					</fieldset>
-
-					<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-						{isRecurring ? (
-							<>
-								<FormInput
-									inputStyle={agendaInputClass}
-									name="recurrence_start_date"
-									label="Começar a partir de"
-									type="date"
-									required
-									nullable
-								/>
-
-								<FormSelect
-									inputStyle={agendaInputClass}
-									name="week_day"
-									label="Dia da semana"
-									required
-									options={Object.entries(weekDayLabels).map(
-										([value, label]) => ({ value, label }),
-									)}
-								/>
-
-								<FormInput
-									inputStyle={agendaInputClass}
-									name="recurrence_end_date"
-									label="Fim da recorrência (opcional)"
-									type="date"
-									nullable
-								/>
-							</>
-						) : (
-							<FormInput
-								inputStyle={agendaInputClass}
-								name="scheduled_date"
-								label="Data"
-								type="date"
-								required
-								nullable
-							/>
-						)}
+									}`}
+							>
+								{option.label}
+							</Button>
+						))}
 					</div>
-				</>
-			}
+				</fieldset>
+			)}
+
+			<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+				{appointmentType === "Class" && isRecurring ? (
+					<>
+						<FormInput
+							inputStyle={agendaInputClass}
+							name="recurrence_start_date"
+							label="Começar a partir de"
+							type="date"
+							required
+							nullable
+						/>
+
+						<FormSelect
+							inputStyle={agendaInputClass}
+							name="week_day"
+							label="Dia da semana"
+							required
+							options={Object.entries(weekDayLabels).map(
+								([value, label]) => ({ value, label }),
+							)}
+						/>
+
+						<FormInput
+							inputStyle={agendaInputClass}
+							name="recurrence_end_date"
+							label="Fim da recorrência (opcional)"
+							type="date"
+							nullable
+						/>
+					</>
+				) : (
+					<FormInput
+						inputStyle={agendaInputClass}
+						name="scheduled_date"
+						label="Data"
+						type="date"
+						required
+						nullable
+					/>
+				)}
+			</div>
 			<div className="grid grid-cols-2 gap-4">
 				<FormInput
 					inputStyle={agendaInputClass}

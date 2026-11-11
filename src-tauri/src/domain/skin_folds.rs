@@ -9,6 +9,18 @@ pub enum FatPercentageClassification {
     Obesity,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
+pub struct BodyCompositionGoals {
+    pub ideal_weight_min: f64,
+    pub ideal_weight_max: f64,
+    pub normal_weight_target: f64,
+    pub overweight_target: f64,
+    pub ideal_percentage_min: f64,
+    pub ideal_percentage_max: f64,
+    pub ideal_percentage_health: f64,
+    pub ideal_percentage_overweight: f64,
+}
+
 pub fn fat_percentage(
     gender: Gender,
     age: i32,
@@ -99,17 +111,35 @@ pub fn ideal_weight_by_fat_percentage(
     age: i32,
     fat_percentage: Option<f64>,
     weight: f64,
-) -> Option<f64> {
+) -> Option<BodyCompositionGoals> {
     let fat_percentage = fat_percentage?;
 
     let (_, overweight, obesity) = values_fat_percentage(gender, age);
 
-    if fat_percentage < overweight {
-        return None;
-    }
     let lean_mass = weight * (1.0 - fat_percentage / 100.0);
-    if fat_percentage < obesity {
-        return Some(lean_mass / (1.0 - overweight / 100.0));
-    }
-    Some(lean_mass / (1.0 - obesity / 100.0))
+
+    let (ideal_percentage_min, ideal_percentage_max) = match gender {
+        Gender::Male => {
+            (14.0, 18.0)
+        }
+        Gender::Female => {
+            (19.0, 25.0)
+        }
+    };
+
+    let ideal_weight_min = lean_mass / (1.0 - ideal_percentage_min / 100.0);
+    let ideal_weight_max = lean_mass / (1.0 - ideal_percentage_max / 100.0);
+    let overweight_final = if fat_percentage < obesity {0.0} else {lean_mass / (1.0 - obesity / 100.0)};
+    let health_final = if fat_percentage < overweight {0.0} else {lean_mass / (1.0 - overweight / 100.0)};
+
+    Some(BodyCompositionGoals {
+        ideal_weight_min,
+        ideal_weight_max,
+        normal_weight_target: health_final,
+        overweight_target: overweight_final,
+        ideal_percentage_min,
+        ideal_percentage_max,
+        ideal_percentage_health: overweight,
+        ideal_percentage_overweight: obesity,
+    })
 }

@@ -14,10 +14,11 @@ import AssessmentChartTooltip from "./AssessmentChartTooltip"
 
 type Props = {
 	assessments: AssessmentView[]
+	pdfOnly?: boolean
 }
 
 
-export default function AssessmentVo2Chart({ assessments }: Props) {
+export default function AssessmentVo2Chart({ assessments, pdfOnly = false }: Props) {
 	const data = assessments.map((assessment) => ({
 		date: new Date(
 			`${assessment.data}T12:00:00`,
@@ -72,7 +73,9 @@ export default function AssessmentVo2Chart({ assessments }: Props) {
 					tickLine={false}
 				/>
 
-				<Tooltip content={<AssessmentChartTooltip />} />
+				{!pdfOnly && (
+					<Tooltip content={<AssessmentChartTooltip />} />
+				)}
 
 				<Legend
 					wrapperStyle={{
@@ -90,6 +93,7 @@ export default function AssessmentVo2Chart({ assessments }: Props) {
 					dot={{ fill: "#22d3ee", r: 4 }}
 					activeDot={{ r: 6 }}
 					connectNulls={false}
+					isAnimationActive={!pdfOnly}
 				/>
 			</LineChart>
 		</ResponsiveContainer>

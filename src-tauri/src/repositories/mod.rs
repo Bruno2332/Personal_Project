@@ -7,3 +7,4 @@ pub mod physical_assessment_repository;
 pub mod student_repository;
 pub mod user_repository;
 pub mod vo2_assessment_repository;
+pub mod agenda_exclusion_repository;

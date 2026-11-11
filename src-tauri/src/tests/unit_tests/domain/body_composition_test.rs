@@ -67,20 +67,60 @@ fn fat_percentage_classification_uses_gender_and_age_ranges() {
 }
 
 #[test]
-fn ideal_weight_is_only_provided_when_fat_is_above_healthy_maximum() {
-    assert_eq!(
-        ideal_weight_by_fat_percentage(Gender::Male, 30, None, 100.0),
-        None
-    );
-    assert_eq!(
-        ideal_weight_by_fat_percentage(Gender::Male, 30, Some(20.0), 100.0),
-        None
+fn body_composition_goals_return_reference_range_and_applicable_targets() {
+    assert!(
+        ideal_weight_by_fat_percentage(
+            Gender::Male,
+            30,
+            None,
+            100.0,
+        )
+            .is_none()
     );
 
-    let ideal = ideal_weight_by_fat_percentage(Gender::Male, 30, Some(25.0), 100.0).unwrap();
-    approximately(ideal, 100.0 * 0.75 / 0.75);
+    // 20%: abaixo do limite de normalidade para essa idade.
+    // Mantém a faixa de referência, mas zera os outros alvos.
+    let normal = ideal_weight_by_fat_percentage(
+        Gender::Male,
+        30,
+        Some(20.0),
+        100.0,
+    )
+        .unwrap();
 
-    let obesity_reference =
-        ideal_weight_by_fat_percentage(Gender::Male, 30, Some(30.0), 100.0).unwrap();
-    approximately(obesity_reference, 70.0 / 0.75);
+    approximately(normal.ideal_weight_min, 80.0 / 0.86);
+    approximately(normal.ideal_weight_max, 80.0 / 0.82);
+    assert_eq!(normal.normal_weight_target, 0.0);
+    assert_eq!(normal.overweight_target, 0.0);
+
+    // 25%: exatamente no limite de obesidade.
+    let boundary = ideal_weight_by_fat_percentage(
+        Gender::Male,
+        30,
+        Some(25.0),
+        100.0,
+    )
+        .unwrap();
+
+    approximately(boundary.overweight_target, 100.0);
+    approximately(boundary.normal_weight_target, 75.0 / 0.79);
+
+    // 30%: retorna todos os pesos-alvo.
+    let obesity = ideal_weight_by_fat_percentage(
+        Gender::Male,
+        30,
+        Some(30.0),
+        100.0,
+    )
+        .unwrap();
+
+    approximately(obesity.overweight_target, 70.0 / 0.75);
+    approximately(obesity.normal_weight_target, 70.0 / 0.79);
+    approximately(obesity.ideal_weight_min, 70.0 / 0.86);
+    approximately(obesity.ideal_weight_max, 70.0 / 0.82);
+
+    assert_eq!(obesity.ideal_percentage_min, 14.0);
+    assert_eq!(obesity.ideal_percentage_max, 18.0);
+    assert_eq!(obesity.ideal_percentage_health, 21.0);
+    assert_eq!(obesity.ideal_percentage_overweight, 25.0);
 }

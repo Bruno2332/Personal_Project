@@ -17,7 +17,7 @@ export default function AssessmentCompositionFields() {
 						type="number"
 						mask="decimal"
 						decimalPlaces={1}
-						maxLength={3}
+						maxLength={4}
 						min={0.1}
 						max={99.9}
 						step="0.1"
@@ -31,7 +31,7 @@ export default function AssessmentCompositionFields() {
 					type="number"
 					mask="decimal"
 					decimalPlaces={1}
-					maxLength={4}
+					maxLength={5}
 					min={0.1}
 					max={100.0}
 					step="0.1"

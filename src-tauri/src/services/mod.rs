@@ -9,3 +9,4 @@ pub mod backup_manager;
 pub mod backup_service;
 pub mod physical_assessment_photos_service;
 pub mod restore_service;
+pub mod agenda_exclusion_service;

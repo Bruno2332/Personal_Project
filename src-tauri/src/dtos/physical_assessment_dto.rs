@@ -107,29 +107,29 @@ pub struct PhysicalAssessmentDto {
     #[validate(range(min = 0.1, max = 100.0, message = "O percentual de gordura deve estar entre 0,1% e 100%."))]
     pub bioimpedance_fat_percentage: Option<f64>,
 
-    #[validate(range(min = 1, max = 200, message = "A força deve estar entre 1 e 200."))]
-    pub right_extensor_strength: Option<i32>,
+    #[validate(range(min = 0.1, max = 200.0, message = "A força deve estar entre 1 e 200."))]
+    pub right_extensor_strength: Option<f64>,
 
-    #[validate(range(min = 1, max = 200, message = "A força deve estar entre 1 e 200."))]
-    pub left_extensor_strength: Option<i32>,
+    #[validate(range(min = 0.1, max = 200.0, message = "A força deve estar entre 1 e 200."))]
+    pub left_extensor_strength: Option<f64>,
 
-    #[validate(range(min = 1, max = 200, message = "A força deve estar entre 1 e 200."))]
-    pub right_flexor_strength: Option<i32>,
+    #[validate(range(min = 0.1, max = 200.0, message = "A força deve estar entre 1 e 200."))]
+    pub right_flexor_strength: Option<f64>,
 
-    #[validate(range(min = 1, max = 200, message = "A força deve estar entre 1 e 200."))]
-    pub left_flexor_strength: Option<i32>,
+    #[validate(range(min = 0.1, max = 200.0, message = "A força deve estar entre 1 e 200."))]
+    pub left_flexor_strength: Option<f64>,
 
-    #[validate(range(min = 1, max = 200, message = "A força deve estar entre 1 e 200."))]
-    pub right_biceps_strength: Option<i32>,
+    #[validate(range(min = 0.1, max = 200.0, message = "A força deve estar entre 1 e 200."))]
+    pub right_biceps_strength: Option<f64>,
 
-    #[validate(range(min = 1, max = 200, message = "A força deve estar entre 1 e 200."))]
-    pub left_biceps_strength: Option<i32>,
+    #[validate(range(min = 0.1, max = 200.0, message = "A força deve estar entre 1 e 200."))]
+    pub left_biceps_strength: Option<f64>,
 
-    #[validate(range(min = 1, max = 200, message = "A força deve estar entre 1 e 200."))]
-    pub right_triceps_strength: Option<i32>,
+    #[validate(range(min = 0.1, max = 200.0, message = "A força deve estar entre 1 e 200."))]
+    pub right_triceps_strength: Option<f64>,
 
-    #[validate(range(min = 1, max = 200, message = "A força deve estar entre 1 e 200."))]
-    pub left_triceps_strength: Option<i32>,
+    #[validate(range(min = 0.1, max = 200.0, message = "A força deve estar entre 1 e 200."))]
+    pub left_triceps_strength: Option<f64>,
     #[validate(range(min = 0, max = 59, message = "Informe de 0 a 59 segundos."))]
     pub vo2_final_stage_seconds: Option<i32>,
     pub created_at: DateTime<Utc>,
@@ -252,7 +252,11 @@ pub struct PhysicalAssessmentCompleteDto {
     pub max_ideal_weight: f64,
 
     pub hypertension_classification: Option<HypertensionClassification>,
+
+    pub circumference_abdominal_high_risk: Option<f64>,
+    pub circumference_abdominal_very_high_risk: Option<f64>,
     pub circumference_abdominal_classification: Option<AbdominalCircumferenceClassification>,
+
     pub fc_heart_rest_classification: Option<FcRestClassification>,
 
     pub right_dynamometer_strength_classification: Option<DynamometerStrengthClassification>,
@@ -263,8 +267,18 @@ pub struct PhysicalAssessmentCompleteDto {
     pub lean_body_mass_percentage_skinfolds: Option<f64>,
     pub fat_percentage_skinfolds: Option<f64>,
 
-    pub ideal_weight_fat_percentage: Option<f64>,
-    pub weight_to_lose: Option<f64>,
+    pub ideal_weight_fat_percentage_min: Option<f64>,
+    pub ideal_weight_fat_percentage_max: Option<f64>,
+    pub ideal_weight_fat_percentage_health: Option<f64>,
+    pub ideal_weight_fat_percentage_overweight: Option<f64>,
+    pub ideal_fat_percentage_min: Option<f64>,
+    pub ideal_fat_percentage_max: Option<f64>,
+    pub ideal_fat_percentage_health: Option<f64>,
+    pub ideal_fat_percentage_overweight: Option<f64>,
+    pub weight_to_lose_overweight: Option<f64>,
+    pub weight_to_lose_health: Option<f64>,
+    pub weight_to_lose_max_percentage: Option<f64>,
+    pub weight_to_lose_min_percentage: Option<f64>,
 
     pub kilos_lean_body_mass_bioimpedance: Option<f64>,
     pub kilos_fat_bioimpedance: Option<f64>,
@@ -283,7 +297,12 @@ pub struct PhysicalAssessmentCompleteDto {
     pub flexor_asymmetry_classification: Option<StrengthAsymmetryClassification>,
 
     pub waist_hip_calculate: Option<f64>,
+    pub waist_hip_moderate_risk: Option<f64>,
+    pub waist_hip_high_risk: Option<f64>,
+    pub waist_hip_very_high_risk: Option<f64>,
     pub waist_hip_classification: Option<WaistHipRiskClassification>,
+
+
     pub maximum_heart_rate: i32,
     pub vo2_assessments: Vec<Vo2AssessmentCompleteDto>,
     pub vo2_parameter: Option<f64>,

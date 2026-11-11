@@ -1,7 +1,7 @@
 use crate::models::agenda::Agenda;
 use async_trait::async_trait;
-use chrono::NaiveDate;
 use sqlx::SqlitePool;
+use chrono::{DateTime, NaiveDate, Utc};
 
 #[cfg_attr(test, mockall::automock)]
 #[async_trait]
@@ -11,6 +11,18 @@ pub trait AgendaRepository: Send + Sync {
         start_date: NaiveDate,
         end_date: NaiveDate,
     ) -> Result<Vec<Agenda>, sqlx::Error>;
+
+    async fn find_by_id(
+        &self,
+        id: i64,
+    ) -> Result<Option<Agenda>, sqlx::Error>;
+
+    async fn end_recurrence(
+        &self,
+        id: i64,
+        end_date: NaiveDate,
+        updated_at: DateTime<Utc>,
+    ) -> Result<Agenda, sqlx::Error>;
 
     async fn insert(&self, entity: Agenda) -> Result<Agenda, sqlx::Error>;
 
@@ -51,6 +63,45 @@ impl AgendaRepository for SqlitePool {
         .bind(end_date)
         .fetch_all(self)
         .await
+    }
+
+    async fn find_by_id(
+        &self,
+        id: i64,
+    ) -> Result<Option<Agenda>, sqlx::Error> {
+        sqlx::query_as::<_, Agenda>(
+            r#"
+        SELECT *
+        FROM agenda
+        WHERE id = $1
+        "#,
+        )
+            .bind(id)
+            .fetch_optional(self)
+            .await
+    }
+    async fn end_recurrence(
+        &self,
+        id: i64,
+        end_date: NaiveDate,
+        updated_at: DateTime<Utc>,
+    ) -> Result<Agenda, sqlx::Error> {
+        sqlx::query_as::<_, Agenda>(
+            r#"
+        UPDATE agenda
+        SET
+            recurrence_end_date = $1,
+            updated_at = $2
+        WHERE id = $3
+          AND is_recurring = 1
+        RETURNING *
+        "#,
+        )
+            .bind(end_date)
+            .bind(updated_at)
+            .bind(id)
+            .fetch_one(self)
+            .await
     }
 
     async fn insert(&self, entity: Agenda) -> Result<Agenda, sqlx::Error> {

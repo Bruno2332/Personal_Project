@@ -15,6 +15,14 @@ pub async fn find_agenda_by_period(
 }
 
 #[tauri::command]
+pub async fn end_agenda_recurrence(
+    pool: State<'_, SqlitePool>,
+    id: i64,
+) -> Result<AgendaDto, AppError> {
+    agenda_service::end_recurrence(pool.inner(), id).await
+}
+
+#[tauri::command]
 pub async fn insert_agenda(
     pool: State<'_, SqlitePool>,
     dto: AgendaDto,

@@ -995,3 +995,79 @@ async fn saving_unexpired_package_keeps_active_status() {
         assert_eq!(result.contract_status, ContractStatus::Active);
     }
 }
+
+#[tokio::test]
+async fn monthly_price_adjustment_does_not_resynchronize_existing_charges() {
+    use crate::models::contract::BillingType;
+
+    let mut repository = ContractServiceRepository::new();
+
+    repository
+        .contracts
+        .expect_update()
+        .withf(|contract, id| {
+            *id == 77
+                && contract.student_id == 7
+                && contract.billing_type == BillingType::Monthly
+                && contract.amount_cents == 15_000
+        })
+        .times(1)
+        .returning(|mut contract, id| {
+            contract.id = Some(id);
+            Ok(contract)
+        });
+
+    repository
+        .contracts
+        .expect_find_all_by_student_id()
+        .with(eq(7))
+        .times(1)
+        .returning(|_| {
+            let mut contract = active_contract_for_student(7);
+            contract.billing_type = BillingType::Monthly;
+            contract.amount_cents = 15_000;
+
+            Ok(vec![contract])
+        });
+
+    repository
+        .student_status
+        .expect_update_is_active()
+        .with(eq(7), eq(true))
+        .times(1)
+        .returning(|_, _| Ok(()));
+
+    repository
+        .financial_records
+        .expect_find_all_by_contract_id()
+        .times(0);
+
+    repository.financial_records.expect_insert().times(0);
+    repository.financial_records.expect_update().times(0);
+
+    repository
+        .financial_records
+        .expect_delete_pending_by_id()
+        .times(0);
+
+    let mut request = valid_create_contract_request();
+
+    request.contract_dto.id = Some(77);
+    request.contract_dto.billing_type = BillingType::Monthly;
+    request.contract_dto.amount_cents = 15_000;
+    request.contract_dto.installment_count = 1;
+    request.contract_dto.duration_months = None;
+    request.contract_dto.end_date = None;
+
+    let result = contract_service::update(
+        &mut repository,
+        77,
+        request,
+    )
+        .await
+        .unwrap();
+
+    assert_eq!(result.id, Some(77));
+    assert_eq!(result.amount_cents, 15_000);
+    assert_eq!(result.billing_type, BillingType::Monthly);
+}

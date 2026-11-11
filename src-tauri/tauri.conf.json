@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "personal_trainer_project",
+  "productName": "Jonatas Sciencia Personal Trainer",
   "version": "0.1.0",
   "identifier": "com.bruno.personal-trainer-project",
   "build": {
