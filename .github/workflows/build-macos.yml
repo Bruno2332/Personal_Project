@@ -58,7 +58,7 @@ jobs:
 
       - name: Compilar aplicativo e gerar DMG
         run: >
-          yarn tauri build
+          ./node_modules/.bin/tauri build
           --target ${{ matrix.target }}
           --bundles dmg
           -- --locked
