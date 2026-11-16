@@ -54,7 +54,7 @@ export default function ContractFields({
 				/>
 
 			)}
-			{!isMonthly &&
+			{!isMonthly && !isAssessment &&
 				<FormInput
 					name="duration_months"
 					label="Duração em meses"

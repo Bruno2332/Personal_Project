@@ -13,14 +13,11 @@ import {
 import { errorMessage } from "../../../utils/errors"
 import useAssessmentStudentOptions from "../../assessments/hooks/useAssessmentStudentOptions"
 
-
-
 type Options = {
     initial: AgendaDto
     onClose: () => void
     onSaved: () => Promise<void>
 }
-
 
 export default function useAppointmentForm({
     initial,
@@ -157,11 +154,14 @@ export default function useAppointmentForm({
             const hasConflict = existingAppointments.some(
                 (appointment) =>
                     appointment.id !== savedId &&
+                    appointment.student_id === dto.student_id &&
                     appointmentsOverlap(candidate, appointment),
             )
 
             if (hasConflict) {
-                setError("Este horário já está ocupado. Escolha outro horário.")
+                setError(
+                    "Este aluno já possui um agendamento nesse horário.",
+                )
                 return
             }
 
@@ -181,7 +181,9 @@ export default function useAppointmentForm({
             try {
                 await onSaved()
             } catch {
-                setError("Horário salvo. Não foi possível recarregar a agenda.")
+                setError(
+                    "Horário salvo. Não foi possível recarregar a agenda.",
+                )
                 return
             }
 
